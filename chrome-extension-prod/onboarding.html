@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LinkedIn Saved Posts Extractor — Setup</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8fafc; color: #1a1a1a;
+      display: flex; justify-content: center; align-items: flex-start;
+      min-height: 100vh; padding: 40px 20px;
+    }
+    .card {
+      background: #fff; border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      max-width: 480px; width: 100%; padding: 36px;
+    }
+    .logo {
+      width: 48px; height: 48px; background: #0077b5;
+      border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; font-size: 24px; font-weight: 800;
+      color: #fff; margin-bottom: 20px;
+    }
+    h1  { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .sub { color: #6b7280; font-size: 14px; margin-bottom: 28px; line-height: 1.5; }
+
+    .step { display: flex; gap: 14px; margin-bottom: 22px; align-items: flex-start; }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #e0f0fa; color: #0077b5;
+      font-weight: 700; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .step-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .step-desc  { font-size: 13px; color: #4b5563; line-height: 1.5; }
+
+    /* Option rows (schedule + batch) */
+    .opt-row { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+    .opt {
+      flex: 1; min-width: 60px; padding: 9px 6px; border: 2px solid #e5e7eb;
+      border-radius: 10px; cursor: pointer; text-align: center;
+      transition: all 0.15s; font-size: 13px; font-weight: 500;
+      background: #f9fafb; user-select: none;
+    }
+    .opt.selected { border-color: #0077b5; background: #e0f0fa; color: #0077b5; }
+    .opt:hover:not(.selected) { border-color: #93c5db; }
+    .opt--test { color: #92400e; border-color: #fde68a; background: #fffbeb; font-size: 11px; }
+    .opt--test.selected { border-color: #d97706; background: #fef3c7; color: #92400e; }
+    .opt .opt-label { font-size: 11px; color: #9ca3af; display: block; margin-top: 2px; }
+    .opt.selected .opt-label { color: #005f94; }
+    .time-est {
+      font-size: 11px; color: #6b7280; margin-top: 4px;
+      min-height: 16px; transition: color 0.2s;
+    }
+
+    /* Folder picker */
+    .folder-picker { display: flex; gap: 8px; align-items: center; }
+    .folder-btn {
+      flex: 1; display: flex; align-items: center; gap: 8px;
+      padding: 9px 14px; border: 1.5px dashed #0077b5;
+      border-radius: 8px; background: #f0f8ff;
+      font-size: 13px; font-weight: 500; color: #0077b5;
+      cursor: pointer; transition: all 0.15s; text-align: left;
+    }
+    .folder-btn:hover { background: #e0f0fa; }
+    .folder-btn.selected { border-style: solid; background: #e0f0fa; border-color: #005f94; color: #005f94; }
+    .folder-clear {
+      padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px;
+      background: #fff; color: #9ca3af; font-size: 12px; cursor: pointer;
+      transition: all 0.15s; display: none;
+    }
+    .folder-clear:hover { background: #fef2f2; color: #ef4444; border-color: #fca5a5; }
+    .folder-clear.show  { display: block; }
+    .input-hint { font-size: 11px; color: #9ca3af; margin-top: 6px; }
+
+    .btn {
+      width: 100%; padding: 12px; background: #0077b5; color: #fff;
+      border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s; margin-top: 4px;
+    }
+    .btn:hover    { background: #005f94; }
+    .btn:disabled { background: #93c5e0; cursor: not-allowed; }
+    .divider { border: none; border-top: 1px solid #f1f1f1; margin: 24px 0; }
+
+    /* AI step */
+    .provider-row { display: flex; gap: 8px; margin: 10px 0 8px; }
+    .provider-btn {
+      flex: 1; padding: 9px 6px; border: 2px solid #e5e7eb; border-radius: 10px;
+      cursor: pointer; text-align: center; font-size: 13px; font-weight: 500;
+      background: #f9fafb; transition: all 0.15s; user-select: none;
+    }
+    .provider-btn.selected { border-color: #0077b5; background: #e0f0fa; color: #0077b5; }
+    .provider-btn:hover:not(.selected) { border-color: #93c5db; }
+    .cost-note {
+      font-size: 11px; color: #6b7280; margin-bottom: 8px; line-height: 1.5;
+    }
+    .cost-note a { color: #0077b5; }
+    .key-row { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+    .key-input {
+      flex: 1; padding: 8px 10px; border: 1.5px solid #d1d5db; border-radius: 8px;
+      font-size: 13px; font-family: monospace; outline: none;
+    }
+    .key-input:focus { border-color: #0077b5; }
+    .privacy-note { font-size: 11px; color: #6b7280; margin-top: 6px; }
+    .skip-link {
+      display: inline-block; margin-top: 4px; font-size: 12px;
+      color: #9ca3af; text-decoration: underline; cursor: pointer; background: none; border: none;
+    }
+    .skip-link:hover { color: #6b7280; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">in</div>
+  <h1>Welcome! Let's set you up.</h1>
+  <p class="sub">
+    This extension automatically extracts your LinkedIn saved posts and saves
+    them as CSV files — no passwords stored, runs in your existing session.
+  </p>
+
+  <!-- Step 1: Sign in -->
+  <div class="step">
+    <div class="step-num">1</div>
+    <div>
+      <div class="step-title">Make sure you're signed in to LinkedIn</div>
+      <div class="step-desc">
+        The extractor uses your existing LinkedIn session. If you're not signed
+        in when a run fires, you'll get a notification to sign in first.
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Schedule -->
+  <div class="step">
+    <div class="step-num">2</div>
+    <div>
+      <div class="step-title">Choose your extraction schedule</div>
+      <div class="step-desc" style="margin-bottom:10px">
+        The extractor runs silently in the background on this schedule.
+      </div>
+      <div class="opt-row">
+        <div class="opt selected" id="opt12">Every 12h</div>
+        <div class="opt"         id="opt24">Every 24h</div>
+        <div class="opt opt--test" id="opt15m" title="Fires every 15 minutes — for testing only">⚗ 15 min</div>
+      </div>
+      <div style="font-size:11px;color:#92400e;min-height:16px;margin-top:3px;" id="testModeHint"></div>
+    </div>
+  </div>
+
+  <!-- Step 3: Batch size -->
+  <div class="step">
+    <div class="step-num">3</div>
+    <div>
+      <div class="step-title">Define batch size</div>
+      <div class="step-desc" style="margin-bottom:10px">
+        How many posts to extract per run. Each run picks up from where the last one left off.
+      </div>
+      <div class="opt-row">
+        <div class="opt" id="batch10">
+          10
+          <span class="opt-label">~30s</span>
+        </div>
+        <div class="opt selected" id="batch25">
+          25
+          <span class="opt-label">~1–2 min</span>
+        </div>
+        <div class="opt" id="batch50">
+          50
+          <span class="opt-label">~2–3 min</span>
+        </div>
+        <div class="opt" id="batch100">
+          100
+          <span class="opt-label">~5–6 min</span>
+        </div>
+      </div>
+      <div class="time-est" id="batchTimeEst">Estimated run time: ~1–2 min</div>
+    </div>
+  </div>
+
+  <!-- Step 4: Folder -->
+  <div class="step">
+    <div class="step-num">4</div>
+    <div style="width:100%">
+      <div class="step-title">Choose a sub-folder name (optional)</div>
+      <div class="step-desc" style="margin-bottom:8px">
+        Chrome extensions can only save files inside your <strong>Downloads</strong> folder.
+        Type a sub-folder name to keep things organised, or leave blank to save directly to Downloads.
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span style="font-size:12px; color:#6b7280; white-space:nowrap;">Downloads /</span>
+        <input id="folderInput" type="text" placeholder="e.g. linkedin-csv"
+               maxlength="60" spellcheck="false"
+               style="flex:1; padding:8px 10px; border:1.5px solid #d1d5db; border-radius:8px;
+                      font-size:13px; font-family:inherit; outline:none;" />
+      </div>
+      <div style="font-size:11px; color:#9ca3af; margin-top:6px;" id="folderHint">
+        Leave blank to save to <strong>Downloads</strong> directly.
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5: AI Titles (optional) -->
+  <div class="step">
+    <div class="step-num">5</div>
+    <div style="width:100%">
+      <div class="step-title">Generate AI titles <span style="font-size:11px;font-weight:400;color:#9ca3af;">(optional)</span></div>
+      <div class="step-desc" style="margin-bottom:10px">
+        After extraction, an AI model reads each post and generates a concise title.
+        Requires an API key from Anthropic or OpenAI — your key never leaves this device.
+      </div>
+      <div class="provider-row">
+        <div class="provider-btn selected" id="ob-anthropic">Anthropic</div>
+        <div class="provider-btn"          id="ob-openai">OpenAI</div>
+      </div>
+      <div class="cost-note" id="ob-cost-anthropic">
+        Uses <strong>Claude Haiku 3.5</strong> · ~$0.035 per 100 posts (range: $0.02–$0.06) ·
+        <a href="https://platform.claude.com/dashboard" target="_blank">Get your API key →</a>
+      </div>
+      <div class="cost-note" id="ob-cost-openai" style="display:none">
+        Uses <strong>GPT-4o mini</strong> · ~$0.006 per 100 posts (range: $0.003–$0.012) ·
+        <a href="https://platform.openai.com/api-keys" target="_blank">Get your API key →</a>
+      </div>
+      <div class="key-row">
+        <input id="ob-api-key" class="key-input" type="password"
+               placeholder="Paste your API key here (or skip)" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="privacy-note">🔒 Your key is stored only in Chrome's local extension storage on this device.</div>
+      <button class="skip-link" id="ob-skip-key">Skip for now — I'll add a key later</button>
+    </div>
+  </div>
+
+  <hr class="divider" />
+  <button class="btn" id="startBtn">Start extracting →</button>
+</div>
+
+<!-- NO inline scripts. All logic is in onboarding.js -->
+<script src="onboarding.js"></script>
+</body>
+</html>
