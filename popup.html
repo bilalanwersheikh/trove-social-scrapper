@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Saved Posts Extractor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px; background: #fff; color: #1a1a1a;
+      width: 320px; min-height: 200px;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────────────── */
+    .header {
+      background: #0077b5; color: #fff;
+      padding: 14px 16px 12px;
+      display: flex; align-items: center; gap: 10px; position: relative;
+    }
+    .header-logo {
+      width: 28px; height: 28px; background: #fff; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 15px; color: #0077b5; flex-shrink: 0;
+    }
+    .header-title { font-size: 14px; font-weight: 600; line-height: 1.2; }
+    .header-sub   { font-size: 11px; opacity: 0.85; margin-top: 1px; }
+
+    /* Three-dot menu button */
+    .menu-btn {
+      margin-left: auto; background: none; border: none; color: #fff;
+      font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
+      opacity: 0.85; flex-shrink: 0;
+    }
+    .menu-btn:hover { opacity: 1; }
+
+    /* Dropdown menu */
+    .dropdown {
+      display: none; position: absolute; top: 46px; right: 10px;
+      background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+      min-width: 180px; z-index: 200; overflow: hidden;
+    }
+    .dropdown.open { display: block; }
+    .dropdown-item {
+      display: block; width: 100%; padding: 10px 14px;
+      text-align: left; background: none; border: none;
+      font-size: 12px; color: #374151; cursor: pointer; transition: background 0.12s;
+    }
+    .dropdown-item:hover { background: #f3f4f6; }
+    .dropdown-item.danger { color: #dc2626; }
+    .dropdown-item.danger:hover { background: #fef2f2; }
+    .dropdown-divider { height: 1px; background: #f1f1f1; margin: 2px 0; }
+    .dropdown-version {
+      padding: 6px 14px 8px; font-size: 10px; color: #9ca3af; text-align: center;
+    }
+
+    /* ── Status bar ──────────────────────────────────────────────────────────── */
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; font-size: 12px; border-bottom: 1px solid #e8e8e8;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.idle    { background: #94a3b8; }
+    .status-dot.running { background: #f59e0b; animation: pulse 1s infinite; }
+    .status-dot.success { background: #22c55e; }
+    .status-dot.error   { background: #ef4444; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+    /* ── Progress overlay ────────────────────────────────────────────────────── */
+    .progress-overlay {
+      display: none;
+      background: #f0f8ff; border-left: 3px solid #0077b5;
+      margin: 10px 16px 0; border-radius: 0 6px 6px 0;
+      padding: 10px 12px; font-size: 12px;
+    }
+    .progress-overlay.show { display: block; }
+    .progress-title {
+      font-weight: 600; color: #0077b5; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px; justify-content: space-between;
+    }
+    .progress-title-left { display: flex; align-items: center; gap: 6px; }
+    .progress-spinner {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 2px solid #c0dff0; border-top-color: #0077b5;
+      animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-phase { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+    .phase-pill {
+      padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600;
+      background: #e2f0fb; color: #0077b5;
+    }
+    .phase-pill.active { background: #0077b5; color: #fff; }
+    .phase-pill.done   { background: #dcfce7; color: #15803d; }
+    .phase-pill.error  { background: #fee2e2; color: #dc2626; }
+    .progress-row { display: flex; justify-content: space-between; margin-bottom: 3px; color: #374151; }
+    .progress-row .lbl { color: #6b7280; }
+    .progress-bar-wrap { height: 4px; background: #dbeafe; border-radius: 2px; margin: 6px 0 4px; overflow: hidden; }
+    .progress-bar { height: 100%; background: #0077b5; border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+    .progress-msg { color: #6b7280; font-size: 11px; margin-top: 4px; }
+    .stop-btn {
+      padding: 2px 8px; font-size: 10px; font-weight: 600;
+      background: #fff; color: #dc2626; border: 1px solid #fca5a5;
+      border-radius: 5px; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .stop-btn:hover { background: #fef2f2; border-color: #ef4444; }
+
+    /* ── Error banner ────────────────────────────────────────────────────────── */
+    .error-banner {
+      display: none; background: #fef2f2; border-left: 3px solid #ef4444;
+      padding: 10px 14px; margin: 12px 16px 0;
+      border-radius: 0 4px 4px 0; font-size: 12px; line-height: 1.5; color: #7f1d1d;
+    }
+    .error-banner.show { display: block; }
+    .error-banner strong { display: block; margin-bottom: 4px; color: #b91c1c; }
+    .error-banner a { color: #0077b5; text-decoration: underline; cursor: pointer; }
+
+    /* ── Sections ────────────────────────────────────────────────────────────── */
+    .section { padding: 12px 16px; border-bottom: 1px solid #f1f1f1; }
+    .section:last-child { border-bottom: none; }
+    .section-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #6b7280; margin-bottom: 8px;
+    }
+
+    /* Stats */
+    .stats { display: flex; gap: 16px; }
+    .stat { flex: 1; }
+    .stat-val { font-size: 20px; font-weight: 700; color: #0077b5; }
+    .stat-lbl { font-size: 11px; color: #6b7280; margin-top: 1px; }
+
+    /* Schedule */
+    .schedule-row { display: flex; align-items: center; gap: 8px; }
+    .seg-btn {
+      flex: 1; padding: 6px 0; border: 1px solid #d1d5db;
+      border-radius: 6px; background: #f9fafb;
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+    }
+    .seg-btn.active { background: #0077b5; color: #fff; border-color: #0077b5; }
+    .seg-btn:hover:not(.active) { background: #e5e7eb; }
+    .seg-btn--test { color: #92400e; border-color: #fde68a; background: #fffbeb; font-size: 11px; }
+    .seg-btn--test.active { background: #d97706; color: #fff; border-color: #d97706; }
+    .pause-btn {
+      width: 100%; margin-top: 8px; padding: 6px; border: 1px solid #d1d5db;
+      border-radius: 6px; background: #fff; font-size: 12px; cursor: pointer;
+      color: #374151; transition: all 0.15s;
+    }
+    .pause-btn:hover { background: #f3f4f6; }
+    .pause-btn.paused { color: #6b7280; }
+
+    /* Batch size */
+    .batch-row { display: flex; gap: 6px; }
+    .batch-btn {
+      flex: 1; padding: 6px 0; border: 1px solid #d1d5db;
+      border-radius: 6px; background: #f9fafb;
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+      text-align: center;
+    }
+    .batch-btn.active { background: #0077b5; color: #fff; border-color: #0077b5; }
+    .batch-btn:hover:not(.active) { background: #e5e7eb; }
+
+    /* AI Titles toggle */
+    .ai-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .ai-label { font-size: 12px; color: #374151; font-weight: 500; }
+    .ai-badge {
+      font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+      background: #fef9c3; color: #854d0e; margin-left: 4px;
+    }
+    .toggle-wrap { display: flex; align-items: center; gap: 6px; }
+    .toggle {
+      width: 32px; height: 18px; border-radius: 9px; background: #d1d5db;
+      border: none; cursor: pointer; position: relative; transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle.on { background: #0077b5; }
+    .toggle::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 14px; height: 14px; border-radius: 50%; background: #fff;
+      transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle.on::after { left: 16px; }
+    .api-key-hint { font-size: 11px; color: #9ca3af; }
+    .api-key-hint a { color: #0077b5; text-decoration: none; cursor: pointer; }
+    .api-key-hint a:hover { text-decoration: underline; }
+    .ai-provider-row {
+      display: flex; gap: 6px; margin-top: 6px;
+    }
+    .provider-btn {
+      flex: 1; padding: 5px 0; border: 1.5px solid #d1d5db;
+      border-radius: 6px; background: #f9fafb;
+      font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+      text-align: center;
+    }
+    .provider-btn.active { border-color: #0077b5; background: #e0f0fa; color: #0077b5; }
+    .provider-btn:hover:not(.active) { background: #e5e7eb; }
+
+    /* Folder input */
+    .folder-constraint {
+      font-size: 11px; color: #f59e0b; background: #fffbeb;
+      border: 1px solid #fde68a; border-radius: 5px;
+      padding: 5px 8px; margin-bottom: 8px; line-height: 1.4;
+    }
+    .folder-input-row { display: flex; gap: 6px; align-items: center; }
+    .folder-prefix { font-size: 12px; color: #6b7280; white-space: nowrap; flex-shrink: 0; }
+    .folder-text-input {
+      flex: 1; padding: 6px 8px; border: 1.5px solid #d1d5db; border-radius: 6px;
+      font-size: 12px; font-family: inherit; outline: none; transition: border-color 0.15s;
+    }
+    .folder-text-input:focus { border-color: #0077b5; }
+    .folder-text-input.has-value { border-color: #0077b5; background: #f0f8ff; }
+    .folder-save-btn {
+      padding: 6px 10px; background: #0077b5; color: #fff;
+      border: none; border-radius: 6px; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    }
+    .folder-save-btn:hover { background: #005f94; }
+    .path-hint { font-size: 11px; color: #9ca3af; margin-top: 5px; }
+    .path-hint.confirmed { color: #15803d; }
+
+    /* Action buttons */
+    .btn-primary {
+      width: 100%; padding: 9px; background: #0077b5; color: #fff;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-primary:hover    { background: #005f94; }
+    .btn-primary:active   { background: #004d7a; }
+    .btn-primary:disabled { background: #93c5e0; cursor: not-allowed; }
+    .btn-secondary {
+      width: 100%; padding: 7px; background: #fff; color: #374151;
+      border: 1px solid #d1d5db; border-radius: 8px;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: background 0.15s; margin-top: 6px;
+    }
+    .btn-secondary:hover { background: #f3f4f6; }
+    .last-run { font-size: 11px; color: #9ca3af; margin-top: 6px; }
+
+    /* ── Dialogs ─────────────────────────────────────────────────────────────── */
+    .dialog-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .dialog-backdrop.show { display: flex; }
+    .dialog {
+      background: #fff; border-radius: 12px;
+      padding: 20px; width: 280px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+    .dialog-icon  { font-size: 22px; margin-bottom: 10px; }
+    .dialog-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: #1a1a1a; }
+    .dialog-body  { font-size: 12px; color: #4b5563; line-height: 1.55; margin-bottom: 14px; }
+    .dialog-body strong { color: #1a1a1a; }
+    .dialog-actions { display: flex; gap: 8px; }
+    .dialog-cancel {
+      flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 7px;
+      background: #fff; font-size: 12px; font-weight: 500; cursor: pointer;
+    }
+    .dialog-cancel:hover { background: #f3f4f6; }
+    .dialog-confirm {
+      flex: 1; padding: 8px; border: none; border-radius: 7px;
+      background: #dc2626; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .dialog-confirm:hover { background: #b91c1c; }
+
+    /* API key dialog extras */
+    .api-input {
+      width: 100%; padding: 8px 10px; border: 1.5px solid #d1d5db;
+      border-radius: 7px; font-size: 12px; font-family: monospace;
+      outline: none; margin-bottom: 6px; transition: border-color 0.15s;
+    }
+    .api-input:focus { border-color: #0077b5; }
+    .api-provider-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .api-tab {
+      flex: 1; padding: 5px; border: 1.5px solid #d1d5db; border-radius: 6px;
+      background: #f9fafb; font-size: 11px; font-weight: 600; cursor: pointer;
+    }
+    .api-tab.active { border-color: #0077b5; background: #e0f0fa; color: #0077b5; }
+    .api-note { font-size: 10px; color: #6b7280; line-height: 1.5; margin-bottom: 10px; }
+    .api-note a { color: #0077b5; text-decoration: none; }
+    .api-note a:hover { text-decoration: underline; }
+    .api-save-btn {
+      width: 100%; padding: 8px; background: #0077b5; color: #fff;
+      border: none; border-radius: 7px; font-size: 12px; font-weight: 600;
+      cursor: pointer; margin-bottom: 6px;
+    }
+    .api-save-btn:hover { background: #005f94; }
+    .api-remove-btn {
+      width: 100%; padding: 6px; background: #fff; color: #dc2626;
+      border: 1px solid #fca5a5; border-radius: 7px; font-size: 11px; cursor: pointer;
+      display: none;
+    }
+    .api-remove-btn.show { display: block; }
+    .api-remove-btn:hover { background: #fef2f2; }
+    .privacy-note {
+      font-size: 10px; color: #6b7280; text-align: center;
+      padding: 6px 0 0; border-top: 1px solid #f1f1f1; margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">in</div>
+    <div>
+      <div class="header-title">Saved Posts Extractor</div>
+      <div class="header-sub">LinkedIn → CSV, automatically</div>
+    </div>
+    <!-- Three-dot menu -->
+    <button class="menu-btn" id="menuBtn" title="More options">⋯</button>
+    <div class="dropdown" id="dropdown">
+      <button class="dropdown-item" id="menuApiKey">🔑 Add / Change API Key</button>
+      <div class="dropdown-divider"></div>
+      <button class="dropdown-item" id="menuReset">↺ Restart Session</button>
+      <button class="dropdown-item" id="menuEmail">✉ Email Developer</button>
+      <button class="dropdown-item" id="menuDiscord">💬 DM on Discord</button>
+      <div class="dropdown-divider"></div>
+      <div class="dropdown-version">v2.0.0</div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-dot idle" id="statusDot"></div>
+    <span id="statusText">Ready</span>
+  </div>
+
+  <!-- Progress overlay -->
+  <div class="progress-overlay" id="progressOverlay">
+    <div class="progress-title">
+      <div class="progress-title-left">
+        <div class="progress-spinner"></div>
+        <span id="progressTitle">Extracting posts…</span>
+      </div>
+      <button class="stop-btn" id="stopBtn" title="Stop extraction">✕ Stop</button>
+    </div>
+    <div class="progress-phase">
+      <span class="phase-pill" id="pill1">Phase 1: Find anchor</span>
+      <span class="phase-pill" id="pill2">Phase 2: Fill batch</span>
+      <span class="phase-pill" id="pill3">Phase 3: AI Titles</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-row">
+      <span class="lbl">New above anchor</span>
+      <span id="progAbove">—</span>
+    </div>
+    <div class="progress-row">
+      <span class="lbl">Continuation below</span>
+      <span id="progBelow">—</span>
+    </div>
+    <div class="progress-row">
+      <span class="lbl">Batch size</span>
+      <span id="progBatch">—</span>
+    </div>
+    <div class="progress-msg" id="progressMsg">Starting…</div>
+  </div>
+
+  <!-- Error banner -->
+  <div class="error-banner" id="errorBanner">
+    <strong id="errorTitle">Sign in required</strong>
+    <span id="errorBody">You are not signed in to LinkedIn.</span>
+    <br><a id="liLink" href="#">Open LinkedIn to sign in →</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="section">
+    <div class="section-label">Extraction stats</div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val" id="statTotal">—</div>
+        <div class="stat-lbl">Total extracted</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statRuns">—</div>
+        <div class="stat-lbl">Runs completed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statLast">—</div>
+        <div class="stat-lbl">Last run</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="section">
+    <div class="section-label">Auto-extract schedule</div>
+    <div class="schedule-row">
+      <button class="seg-btn" id="btn12h">Every 12 hours</button>
+      <button class="seg-btn" id="btn24h">Every 24 hours</button>
+      <button class="seg-btn seg-btn--test" id="btn15m" title="Test mode — fires every 15 minutes">⚗ 15 min</button>
+    </div>
+    <button class="pause-btn" id="pauseBtn">⏸ Pause schedule</button>
+  </div>
+
+  <!-- Batch size -->
+  <div class="section">
+    <div class="section-label">Posts per run</div>
+    <div class="batch-row">
+      <button class="batch-btn" id="batchBtn10">10</button>
+      <button class="batch-btn" id="batchBtn25">25</button>
+      <button class="batch-btn" id="batchBtn50">50</button>
+      <button class="batch-btn" id="batchBtn100">100</button>
+    </div>
+  </div>
+
+  <!-- AI Titles -->
+  <div class="section">
+    <div class="ai-row">
+      <span class="ai-label">AI-generated titles <span class="ai-badge">BETA</span></span>
+      <div class="toggle-wrap">
+        <span class="api-key-hint" id="aiKeyHint"></span>
+        <button class="toggle" id="aiToggle" title="Toggle AI titles"></button>
+      </div>
+    </div>
+    <div id="aiProviderRow" class="ai-provider-row" style="display:none;">
+      <button class="provider-btn" id="providerAnthropic">Anthropic (Haiku)</button>
+      <button class="provider-btn" id="providerOpenAI">OpenAI (GPT-4o-mini)</button>
+    </div>
+  </div>
+
+  <!-- Output folder -->
+  <div class="section">
+    <div class="section-label">Save CSVs to</div>
+    <div class="folder-constraint">
+      ⚠ Chrome extensions can only save files inside your <strong>Downloads</strong> folder.
+    </div>
+    <div class="folder-input-row">
+      <span class="folder-prefix">Downloads /</span>
+      <input class="folder-text-input" id="folderInput" type="text"
+             placeholder="e.g. linkedin-csv" maxlength="60" spellcheck="false" />
+      <button class="folder-save-btn" id="folderSaveBtn">Save</button>
+    </div>
+    <div class="path-hint" id="folderHint">Leave blank to save directly to Downloads.</div>
+  </div>
+
+  <!-- Actions -->
+  <div class="section">
+    <button class="btn-primary"   id="runBtn">▶ Extract now</button>
+    <button class="btn-secondary" id="downloadBtn">↓ Download master CSV</button>
+    <div class="last-run" id="lastRunInfo"></div>
+  </div>
+
+  <!-- ── Dialogs ──────────────────────────────────────────────────────────────── -->
+
+  <!-- Reset confirmation -->
+  <div class="dialog-backdrop" id="resetDialog">
+    <div class="dialog">
+      <div class="dialog-icon">⚠️</div>
+      <div class="dialog-title">Restart session?</div>
+      <div class="dialog-body">
+        This resets your <strong>extraction progress</strong> — post count, anchor, and run history.
+        <br><br>
+        <strong>Your downloaded CSV files are not affected.</strong>
+        The next run will start fresh from the top of your saved posts list.
+      </div>
+      <div class="dialog-actions">
+        <button class="dialog-cancel"  id="resetCancel">Cancel</button>
+        <button class="dialog-confirm" id="resetConfirm">Yes, restart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API key dialog -->
+  <div class="dialog-backdrop" id="apiDialog">
+    <div class="dialog">
+      <div class="dialog-icon">🔑</div>
+      <div class="dialog-title">Add your AI API key</div>
+      <div class="dialog-body">
+        Phase 3 uses AI to generate a meaningful title for each post from its content.
+        Your key is stored <strong>only on this device</strong> and sent directly to the AI
+        provider — never shared with anyone else.
+      </div>
+
+      <div class="api-provider-tabs">
+        <button class="api-tab active" id="tabAnthropic">Anthropic</button>
+        <button class="api-tab" id="tabOpenAI">OpenAI</button>
+      </div>
+
+      <div id="apiNoteAnthropic" class="api-note">
+        Uses <strong>Claude Haiku 3.5</strong>.<br>
+        Cost: ~$0.035 per 100 posts (range: $0.02–$0.06 depending on post length).<br>
+        Get your key: <a href="https://platform.claude.com/dashboard" target="_blank">platform.claude.com/dashboard</a>
+        → log in → API Keys → Create key.
+      </div>
+      <div id="apiNoteOpenAI" class="api-note" style="display:none;">
+        Uses <strong>GPT-4o-mini</strong>.<br>
+        Cost: ~$0.006 per 100 posts (range: $0.003–$0.012 depending on post length).<br>
+        Get your key: <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>
+        → log in → Create new secret key.
+      </div>
+
+      <input class="api-input" id="apiKeyInput" type="password"
+             placeholder="Paste your API key here…" autocomplete="off" />
+      <button class="api-save-btn" id="apiSaveBtn">Save key</button>
+      <button class="api-remove-btn" id="apiRemoveBtn">Remove saved key</button>
+
+      <div class="privacy-note">🔒 Your key never leaves this device.</div>
+
+      <div class="dialog-actions" style="margin-top:10px;">
+        <button class="dialog-cancel" id="apiCancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NO inline scripts — all logic in popup.js -->
+  <script src="popup.js"></script>
+</body>
+</html>
