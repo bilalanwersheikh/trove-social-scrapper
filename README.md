@@ -110,11 +110,12 @@ You can add or change your API key at any time via the **⋯ menu** in the exten
 
 ## FAQ
 
-**Does this violate LinkedIn's Terms of Service?**
-Technically yes — LinkedIn's §8.2 prohibits automated data collection. In practice, the extension uses your existing login session, appears as normal human browsing, and only accesses your own saved posts. The risk of enforcement for personal use is very low. That said, use it at your own discretion.
+**What is Trove?**
+Trove is your personal knowledge repository capable of auto-syncing your saves from across the internet so you can use them for professional and personal work. Saves catch dust across multiple platforms and Trove's goal is surface them for better usage. The team behind Trove is excited about curated intelligence that each knowledge worker maintains and making that accessible for the AI-Era. 
 
-**Can I publish this to the Chrome Web Store?**
-Yes, with a proper privacy policy explaining that no data is transmitted to your servers. The extension never contacts any server except LinkedIn (to load the page) and optionally Anthropic/OpenAI (for AI titles).
+
+**Does this violate LinkedIn's Terms of Service?**
+LinkedIn's 8.2 prohibits automated data collection for commercial purposes. However this extension is localized to your machine (laptop) and uses your existing login session, appears as normal human browsing, and only accesses your own saved posts. Given the saved posts are your own bookmarks, the risk of enforcement for personal use is very low. That said, use it at your own discretion.
 
 **Where are the logs?**
 Open `chrome://extensions`, find **LinkedIn Saved Posts Extractor**, and click **Service worker** to open the DevTools console. All extraction events are logged there.
@@ -145,12 +146,17 @@ chrome-extension-prod/
 
 ## Want this without the setup?
 
-[Trove](https://usetrove.app) does this natively — no extension, no API keys, no CSV wrangling. Your LinkedIn saved posts are automatically enriched, tagged, and searchable alongside everything else you've bookmarked.
+[Trove](https://www.usetrove.app) will be doing this natively — no extension, no API keys, no CSV wrangling. Your LinkedIn saved posts are automatically enriched, tagged, and searchable alongside everything else you've bookmarked so you can reference them inside of an AI chat (Claude, ChatGPT, Gemini)
 
 ---
 
 ## License
 
-MIT — fork it, build on it, ship it. A mention or link back is appreciated but not required.
+MIT — fork it, build on it, ship it. A mention or link back is appreciated.
 
 Questions or bugs: [support@usetrove.app](mailto:support@usetrove.app)
+
+## Discord Community
+
+Join Trove's Beta launch: https://discord.gg/4jU4Myfvs
+
