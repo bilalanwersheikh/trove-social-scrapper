@@ -41,6 +41,10 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     _stopRequested = false;
     await runExtractionFlow('scheduled');
   }
+  if (alarm.name === 'linkedin-extract-retry') {
+    _stopRequested = false;
+    await runExtractionFlow('scheduled');
+  }
 });
 
 
@@ -85,22 +89,28 @@ async function runExtractionFlow(trigger = 'manual') {
     return await failRun(state, runEntry, err.message);
   }
 
-  // ── 2. Wait for page to settle, then check login state ──
-  await sleep(3000);
+  // ── 2. Wait for content script to be ready, then check login state ──
+  // LinkedIn is a React SPA — the page fires 'complete' before React mounts the nav.
+  // We retry the ping up to 10× with 2s gaps (20s total) to cover slow machines and
+  // navigations from a different LinkedIn page (content script re-injected fresh).
   broadcastStatus({ running: true, message: 'Checking login…' });
 
-  let loginOk;
-  try {
-    const pingResp = await sendToTab(tabId, { action: 'ping' });
-    loginOk = pingResp?.loggedIn;
-  } catch {
-    await sleep(3000);
+  const MAX_PING_ATTEMPTS = 10;
+  const PING_INTERVAL_MS  = 2000;
+  let loginOk  = false;
+  let pingResp = null;
+
+  for (let attempt = 1; attempt <= MAX_PING_ATTEMPTS; attempt++) {
+    await sleep(PING_INTERVAL_MS);
     try {
-      const pingResp = await sendToTab(tabId, { action: 'ping' });
-      loginOk = pingResp?.loggedIn;
+      pingResp = await sendToTab(tabId, { action: 'ping' });
+      if (pingResp?.loggedIn === true)  { loginOk = true;  break; }
+      if (pingResp?.loggedIn === false) { loginOk = false; break; } // definitive "not logged in"
+      // null/undefined response = content script not ready yet, keep retrying
     } catch {
-      loginOk = false;
+      // sendToTab throws if content script isn't injected yet — keep retrying
     }
+    broadcastStatus({ running: true, message: `Waiting for LinkedIn… (${attempt}/${MAX_PING_ATTEMPTS})` });
   }
 
   // ── 3. LOGIN FAILURE ──
@@ -110,8 +120,8 @@ async function runExtractionFlow(trigger = 'manual') {
     state.runs.push(runEntry);
     state.last_run_at = runEntry.timestamp;
     await saveState(state);
-    notify('LinkedIn Extractor — Sign In Required',
-      'Please open LinkedIn, sign in, and run the extractor again.', true);
+    notify('Saved Posts Exporter — Sign In Required',
+      'Please sign in to LinkedIn and try again.', true);
     broadcastStatus({ running: false, error: 'NOT_LOGGED_IN', lastRun: runEntry });
     return;
   }
@@ -285,6 +295,13 @@ async function failRun(state, runEntry, errorMsg) {
   await saveState(state);
   notify('LinkedIn Extractor — Error', errorMsg, true);
   broadcastStatus({ running: false, error: errorMsg, lastRun: runEntry });
+
+  // Schedule a one-shot retry in 5 minutes for transient failures only.
+  // NOT_LOGGED_IN is a permanent user-action failure — retrying automatically
+  // would be pointless since nothing will change until the user signs in.
+  if (errorMsg !== 'NOT_LOGGED_IN' && runEntry.error !== 'NOT_LOGGED_IN') {
+    await chrome.alarms.create('linkedin-extract-retry', { delayInMinutes: 5 });
+  }
 }
 
 async function getOrOpenLinkedInTab() {

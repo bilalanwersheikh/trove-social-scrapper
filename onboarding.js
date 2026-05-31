@@ -104,27 +104,82 @@ async function finish() {
   btn.disabled    = true;
   btn.textContent = 'Setting up…';
 
+  // Clear any previous error banner
+  showOnboardingError(null);
+
   const folderName = sanitize(document.getElementById('folderInput').value.trim());
   const apiKeyRaw  = document.getElementById('ob-api-key').value.trim();
   const apiKey     = (!skipApiKey && apiKeyRaw) ? apiKeyRaw : null;
 
-  await sendMsg({ action: 'set_output_path',  path:    folderName || null });
-  await sendMsg({ action: 'set_schedule',      hours:   selectedHours });
-  await sendMsg({ action: 'set_batch_size',    size:    selectedBatchSize });
+  await sendMsg({ action: 'set_output_path',  path:     folderName || null });
+  await sendMsg({ action: 'set_schedule',      hours:    selectedHours });
+  await sendMsg({ action: 'set_batch_size',    size:     selectedBatchSize });
   await sendMsg({ action: 'set_ai_provider',   provider: selectedProvider });
 
   if (apiKey) {
-    await sendMsg({ action: 'set_ai_api_key',  apiKey });
+    await sendMsg({ action: 'set_ai_api_key',  key: apiKey });
     await sendMsg({ action: 'set_ai_titles',   enabled: true });
   }
 
-  sendMsg({ action: 'run_now' });   // fire first run, don't await
+  // Listen for the first status update from the background run so we can give
+  // the user feedback instead of silently closing.
+  btn.textContent = 'Opening LinkedIn…';
 
-  btn.textContent = 'Done! Extracting in background…';
-  setTimeout(() => window.close(), 1500);
+  const statusPromise = new Promise(resolve => {
+    const listener = (msg) => {
+      if (msg.action !== 'status_update') return;
+      if (msg.error === 'NOT_LOGGED_IN') { resolve('not_logged_in'); chrome.runtime.onMessage.removeListener(listener); }
+      else if (msg.running === false && !msg.error) { resolve('done'); chrome.runtime.onMessage.removeListener(listener); }
+      else if (msg.running === true) { btn.textContent = msg.message || 'Running…'; }
+    };
+    chrome.runtime.onMessage.addListener(listener);
+  });
+
+  sendMsg({ action: 'run_now' });   // fire — don't await the run itself
+
+  // Wait up to 25s for a meaningful status (covers the 10×2s ping retry loop)
+  const result = await Promise.race([
+    statusPromise,
+    sleep(25000).then(() => 'timeout')
+  ]);
+
+  if (result === 'not_logged_in') {
+    btn.disabled    = false;
+    btn.textContent = 'Try again →';
+    showOnboardingError(
+      'LinkedIn sign-in required. Please <a href="https://www.linkedin.com/login" target="_blank">sign in to LinkedIn</a> in this browser, then click Try again.'
+    );
+    return;
+  }
+
+  btn.textContent = 'All set! Exporting in background…';
+  setTimeout(() => window.close(), 1800);
 }
 
-// ── Messaging helper ──────────────────────────────────────────────────────────
+function showOnboardingError(html) {
+  let banner = document.getElementById('ob-error-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'ob-error-banner';
+    banner.style.cssText = [
+      'margin-top:16px', 'padding:12px 16px',
+      'background:#fef2f2', 'border-left:3px solid #dc2626',
+      'border-radius:0 8px 8px 0', 'font-size:13px',
+      'color:#7f1d1d', 'line-height:1.5', 'display:none'
+    ].join(';');
+    document.getElementById('startBtn').insertAdjacentElement('afterend', banner);
+  }
+  if (html) {
+    banner.innerHTML = html;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function sendMsg(msg) {
   return new Promise(resolve => {

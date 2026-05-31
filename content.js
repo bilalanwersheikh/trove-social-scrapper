@@ -32,13 +32,26 @@
 
 function isLoggedIn() {
   const url = window.location.href;
+
+  // Definitive "not logged in" — redirected to auth pages
   if (url.includes('/login') || url.includes('/authwall') || url.includes('/checkpoint')) {
     return false;
   }
-  return !!document.querySelector(
-    '.global-nav__me, [data-test-id="nav-settings__open-rec-dropdown"], ' +
-    '[class*="global-nav__me"]'
-  );
+
+  // If we're on the saved-posts page and NOT on an auth page, LinkedIn has
+  // already confirmed the session server-side by serving the page.
+  // Check several nav selectors that appear at different render stages.
+  const loggedInSelectors = [
+    '.global-nav__me',
+    '[class*="global-nav__me"]',
+    '[data-test-id="nav-settings__open-rec-dropdown"]',
+    'nav[aria-label]',                          // top nav — renders early
+    '.authentication-outlet',                   // authenticated route wrapper
+    '[class*="scaffold-layout__main"]',         // main content — only present when logged in
+    '[class*="ember-application"]',             // legacy Ember shell
+  ];
+
+  return loggedInSelectors.some(sel => !!document.querySelector(sel));
 }
 
 

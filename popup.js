@@ -50,6 +50,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('downloadBtn').addEventListener('click', downloadMaster);
   document.getElementById('liLink').addEventListener('click',      openLinkedIn);
 
+  // Tab switching
+  document.getElementById('tabDashboard').addEventListener('click', () => switchTab('dashboard'));
+  document.getElementById('tabRunLog').addEventListener('click',    () => switchTab('runLog'));
+
   // Reset dialog
   document.getElementById('resetCancel').addEventListener('click',  hideResetDialog);
   document.getElementById('resetConfirm').addEventListener('click', confirmReset);
@@ -100,10 +104,18 @@ function stopProgressPolling() {
 
 // ── State rendering ───────────────────────────────────────────────────────────
 
+function switchTab(tab) {
+  document.getElementById('panelDashboard').style.display = tab === 'dashboard' ? '' : 'none';
+  document.getElementById('panelRunLog').style.display    = tab === 'runLog'    ? '' : 'none';
+  document.getElementById('tabDashboard').classList.toggle('active', tab === 'dashboard');
+  document.getElementById('tabRunLog').classList.toggle('active',    tab === 'runLog');
+}
+
 async function refreshUI() {
   const resp = await sendMessage({ action: 'get_state' });
   if (!resp || !resp.ok) return;
   renderState(resp.state);
+  renderRunLog(resp.state.runs);
 
   // Resume polling if extraction is mid-run
   const tabs = await chrome.tabs.query({ url: 'https://www.linkedin.com/my-items/saved-posts*' });
@@ -529,6 +541,91 @@ async function removeApiKey() {
   document.getElementById('apiKeyInput').placeholder = 'Paste your API key here…';
   hideApiDialog();
   await refreshUI();
+}
+
+
+// ── Run Log ───────────────────────────────────────────────────────────────────
+
+function relativeTimeIso(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function renderRunLog(runs) {
+  const list = document.getElementById('runLogList');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (!runs || runs.length === 0) {
+    list.innerHTML = '<div class="run-log-empty">No exports yet. Run your first export from the Dashboard.</div>';
+    return;
+  }
+
+  const recent = [...runs].reverse().slice(0, 20);
+  recent.forEach(run => {
+    const item = document.createElement('div');
+    item.className = 'run-log-item';
+
+    // Dot
+    const dot = document.createElement('div');
+    dot.className = 'run-log-dot ' + (
+      run.status === 'completed' || run.status === 'success' ? 'success' :
+      run.status === 'failed'                                ? 'failed'  : 'partial'
+    );
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'run-log-body';
+
+    const line1 = document.createElement('div');
+    line1.className = 'run-log-line1';
+    const isSuccess = run.status === 'completed' || run.status === 'success';
+    const isNotLoggedIn = run.error === 'NOT_LOGGED_IN';
+    if (isSuccess) {
+      const n = run.new_posts ?? 0;
+      line1.textContent = n > 0 ? `✓ ${n} post${n !== 1 ? 's' : ''} exported` : '✓ 0 posts — already up to date';
+    } else if (isNotLoggedIn) {
+      line1.textContent = '✕ Not signed in to LinkedIn';
+    } else {
+      line1.textContent = '✕ Export failed';
+    }
+
+    const line2 = document.createElement('div');
+    line2.className = 'run-log-line2';
+    const ts      = run.timestamp ? relativeTimeIso(run.timestamp) : '';
+    const trigger = run.trigger   ? run.trigger                    : '';
+    let line2Text = [ts, trigger].filter(Boolean).join(' · ');
+    if (run.status === 'failed' && !isNotLoggedIn && run.error) {
+      const truncated = run.error.length > 60 ? run.error.slice(0, 60) + '…' : run.error;
+      line2Text += (line2Text ? ' — ' : '') + truncated;
+    }
+    line2.textContent = line2Text;
+
+    body.appendChild(line1);
+    body.appendChild(line2);
+
+    item.appendChild(dot);
+    item.appendChild(body);
+
+    // Retry button for non-auth failures
+    if (run.status === 'failed' && !isNotLoggedIn) {
+      const retryBtn = document.createElement('button');
+      retryBtn.className   = 'run-log-retry';
+      retryBtn.textContent = '↻ Retry';
+      retryBtn.addEventListener('click', async () => {
+        await sendMessage({ action: 'run_now' });
+        switchTab('dashboard');
+      });
+      item.appendChild(retryBtn);
+    }
+
+    list.appendChild(item);
+  });
 }
 
 
