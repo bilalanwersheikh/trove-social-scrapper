@@ -26,7 +26,7 @@ let _stopRequested = false;
 
 async function setAlarm(hours) {
   await chrome.alarms.clear(ALARM_NAME);
-  chrome.alarms.create(ALARM_NAME, {
+  await chrome.alarms.create(ALARM_NAME, {
     delayInMinutes:  hours * 60,
     periodInMinutes: hours * 60
   });
