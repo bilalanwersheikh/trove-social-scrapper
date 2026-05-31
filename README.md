@@ -17,11 +17,13 @@ Built by [Bilal Anwersh](https://www.linkedin.com/in/bilalanwersh/) · Open-sour
 
 ## Installation
 
-1. **Clone or download this repository**
-   ```
-   git clone https://github.com/bilalanwersheikh/trove-social-scrapper.git
-   ```
-   Or click **Code → Download ZIP** on GitHub and unzip it anywhere on your machine.
+1. **Download the extension folder**
+
+   - Go to the repo on GitHub and click **Code → Download ZIP**
+   - Unzip the file — you'll get a folder called `trove-social-scrapper-main` (or similar)
+   - Inside it, find the `chrome-extension-prod/` folder — that's the extension. Move it anywhere convenient (e.g. your Desktop or Documents).
+
+   > If you're comfortable with git: `git clone https://github.com/bilalanwersheikh/trove-social-scrapper.git` then use the `chrome-extension-prod/` folder inside.
 
 2. **Open Chrome's extension manager**
    Navigate to `chrome://extensions` in your address bar.
@@ -30,7 +32,7 @@ Built by [Bilal Anwersh](https://www.linkedin.com/in/bilalanwersh/) · Open-sour
    Toggle the **Developer mode** switch in the top-right corner.
 
 4. **Load the extension**
-   Click **Load unpacked** and select the `chrome-extension-prod/` folder inside the cloned/unzipped repo (that folder contains `manifest.json` at its root).
+   Click **Load unpacked** and select the `chrome-extension-prod/` folder you saved in step 1.
 
 5. **Complete setup**
    The setup page opens automatically on first install. Choose your schedule, batch size, output folder, and optionally add an AI API key.
@@ -110,12 +112,11 @@ You can add or change your API key at any time via the **⋯ menu** in the exten
 
 ## FAQ
 
-**What is Trove?**
-Trove is your personal knowledge repository capable of auto-syncing your saves from across the internet so you can use them for professional and personal work. Saves catch dust across multiple platforms and Trove's goal is surface them for better usage. The team behind Trove is excited about curated intelligence that each knowledge worker maintains and making that accessible for the AI-Era. 
-
-
 **Does this violate LinkedIn's Terms of Service?**
-LinkedIn's 8.2 prohibits automated data collection for commercial purposes. However this extension is localized to your machine (laptop) and uses your existing login session, appears as normal human browsing, and only accesses your own saved posts. Given the saved posts are your own bookmarks, the risk of enforcement for personal use is very low. That said, use it at your own discretion.
+Technically yes — LinkedIn's §8.2 prohibits automated data collection. In practice, the extension uses your existing login session, appears as normal human browsing, and only accesses your own saved posts. The risk of enforcement for personal use is very low. That said, use it at your own discretion.
+
+**Can I publish this to the Chrome Web Store?**
+Yes, with a proper privacy policy explaining that no data is transmitted to your servers. The extension never contacts any server except LinkedIn (to load the page) and optionally Anthropic/OpenAI (for AI titles).
 
 **Where are the logs?**
 Open `chrome://extensions`, find **LinkedIn Saved Posts Extractor**, and click **Service worker** to open the DevTools console. All extraction events are logged there.
@@ -126,9 +127,16 @@ The extension saves progress after every batch of 10 posts. On the next run it p
 **Can I change the output folder after setup?**
 Yes — open the extension popup and update the folder field there. Files will start saving to the new location on the next run.
 
+**How do I update to a new version?**
+Replace the files inside your existing `chrome-extension-prod/` folder with the new ones, then go to `chrome://extensions` and click the **↺ refresh icon** on the extension card. Do **not** remove the extension and reload from a new folder — that wipes your export history, anchor position, and deduplication state. Your downloaded CSV files in `Downloads/` are never affected either way.
+
+> **Note for a future release:** A self-healing import is planned that will rebuild state from the master CSV on first run after a reinstall, making the distinction above irrelevant.
+
 ---
 
 ## Project structure
+
+The extension lives inside the `chrome-extension-prod/` folder:
 
 ```
 chrome-extension-prod/
@@ -146,17 +154,12 @@ chrome-extension-prod/
 
 ## Want this without the setup?
 
-[Trove](https://www.usetrove.app) will be doing this natively — no extension, no API keys, no CSV wrangling. Your LinkedIn saved posts are automatically enriched, tagged, and searchable alongside everything else you've bookmarked so you can reference them inside of an AI chat (Claude, ChatGPT, Gemini)
+[Trove](https://usetrove.app) does this natively — no extension, no API keys, no CSV wrangling. Your LinkedIn saved posts are automatically enriched, tagged, and searchable alongside everything else you've bookmarked.
 
 ---
 
 ## License
 
-MIT — fork it, build on it, ship it. A mention or link back is appreciated.
+MIT — fork it, build on it, ship it. A mention or link back is appreciated but not required.
 
 Questions or bugs: [support@usetrove.app](mailto:support@usetrove.app)
-
-## Discord Community
-
-Join Trove's Beta launch: https://discord.gg/4jU4Myfvs
-
