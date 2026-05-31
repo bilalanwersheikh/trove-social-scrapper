@@ -126,10 +126,13 @@ function extractCards() {
     //                  .entity-result__primary-subtitle = professional headline.
     // IMPORTANT: do NOT search inside the author element or it returns the author name again.
     const HEADLINE_BLACKLIST = /^(status is (online|offline|away|busy)|1st|2nd|3rd|follow|connect|message|pending|connection|open to work|hiring|premium|linkedin member)$/i;
-    const isValidHeadline = (txt) => (
-      txt && txt !== author && txt.length >= 4 && txt.length <= 300 &&
-      !HEADLINE_BLACKLIST.test(txt.trim())
-    );
+    const isValidHeadline = (txt) => {
+      if (!txt || txt === author || txt.length < 4 || txt.length > 300) return false;
+      // Check BOTH the full text and the first line — multi-line strings can hide blacklisted
+      // values on line 1 that pass the anchored regex on the full string (e.g. "Status is offline\n…")
+      const firstLine = txt.trim().split('\n')[0].trim();
+      return !HEADLINE_BLACKLIST.test(txt.trim()) && !HEADLINE_BLACKLIST.test(firstLine);
+    };
 
     let title = '';
     const titleSelectors = [

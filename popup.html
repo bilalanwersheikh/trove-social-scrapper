@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LinkedIn Saved Posts Extractor</title>
+  <title>LinkedIn Saved Posts Exporter</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -331,7 +331,7 @@
   <div class="header">
     <div class="header-logo">T</div>
     <div>
-      <div class="header-title">Saved Posts Extractor</div>
+      <div class="header-title">Saved Posts Exporter</div>
       <div class="header-sub">LinkedIn → CSV, automatically</div>
     </div>
     <!-- Three-dot menu -->
@@ -358,9 +358,9 @@
     <div class="progress-title">
       <div class="progress-title-left">
         <div class="progress-spinner"></div>
-        <span id="progressTitle">Extracting posts…</span>
+        <span id="progressTitle">Exporting posts…</span>
       </div>
-      <button class="stop-btn" id="stopBtn" title="Stop extraction">✕ Stop</button>
+      <button class="stop-btn" id="stopBtn" title="Stop export">✕ Stop</button>
     </div>
     <div class="progress-phase">
       <span class="phase-pill" id="pill1">Phase 1: Find anchor</span>
@@ -394,7 +394,7 @@
 
   <!-- Stats -->
   <div class="section">
-    <div class="section-label">Extraction stats</div>
+    <div class="section-label">Export stats</div>
     <div class="stats">
       <div class="stat">
         <div class="stat-val" id="statTotal">—</div>
@@ -413,7 +413,7 @@
 
   <!-- Schedule -->
   <div class="section">
-    <div class="section-label">Auto-extract schedule</div>
+    <div class="section-label">Auto-export schedule</div>
     <div class="schedule-row">
       <button class="seg-btn" id="btn12h">Every 12 hours</button>
       <button class="seg-btn" id="btn24h">Every 24 hours</button>
@@ -465,7 +465,7 @@
 
   <!-- Actions -->
   <div class="section">
-    <button class="btn-primary"   id="runBtn">▶ Extract now</button>
+    <button class="btn-primary"   id="runBtn">▶ Export now</button>
     <button class="btn-secondary" id="downloadBtn">↓ Download master CSV</button>
     <div class="last-run" id="lastRunInfo"></div>
   </div>
@@ -478,7 +478,7 @@
       <div class="dialog-icon">⚠️</div>
       <div class="dialog-title">Restart session?</div>
       <div class="dialog-body">
-        This resets your <strong>extraction progress</strong> — post count, anchor, and run history.
+        This resets your <strong>export progress</strong> — post count, anchor, and run history.
         <br><br>
         <strong>Your downloaded CSV files are not affected.</strong>
         The next run will start fresh from the top of your saved posts list.

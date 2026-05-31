@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>LinkedIn Saved Posts Extractor — Setup</title>
+  <title>LinkedIn Saved Posts Exporter — Setup</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -124,7 +124,7 @@
   <div class="logo">T</div>
   <h1>Welcome! Let's set you up.</h1>
   <p class="sub">
-    This extension automatically extracts your LinkedIn saved posts and saves
+    This extension automatically exports your LinkedIn saved posts and saves
     them as CSV files — no passwords stored, runs in your existing session.
   </p>
 
@@ -134,7 +134,7 @@
     <div>
       <div class="step-title">Make sure you're signed in to LinkedIn</div>
       <div class="step-desc">
-        The extractor uses your existing LinkedIn session. If you're not signed
+        The exporter uses your existing LinkedIn session. If you're not signed
         in when a run fires, you'll get a notification to sign in first.
       </div>
     </div>
@@ -144,9 +144,9 @@
   <div class="step">
     <div class="step-num">2</div>
     <div>
-      <div class="step-title">Choose your extraction schedule</div>
+      <div class="step-title">Choose your export schedule</div>
       <div class="step-desc" style="margin-bottom:10px">
-        The extractor runs silently in the background on this schedule.
+        The exporter runs silently in the background on this schedule.
       </div>
       <div class="opt-row">
         <div class="opt selected" id="opt12">Every 12h</div>
@@ -163,7 +163,7 @@
     <div>
       <div class="step-title">Define batch size</div>
       <div class="step-desc" style="margin-bottom:10px">
-        How many posts to extract per run. Each run picks up from where the last one left off.
+        How many posts to export per run. Each run picks up from where the last one left off.
       </div>
       <div class="opt-row">
         <div class="opt" id="batch10">
@@ -215,7 +215,7 @@
     <div style="width:100%">
       <div class="step-title">Generate AI titles <span style="font-size:11px;font-weight:400;color:#7A7A7A;">(optional)</span></div>
       <div class="step-desc" style="margin-bottom:10px">
-        After extraction, an AI model reads each post and generates a concise title.
+        After export, an AI model reads each post and generates a concise title.
         Requires an API key from Anthropic or OpenAI — your key never leaves this device.
       </div>
       <div class="provider-row">
@@ -240,7 +240,7 @@
   </div>
 
   <hr class="divider" />
-  <button class="btn" id="startBtn">Start extracting →</button>
+  <button class="btn" id="startBtn">Start exporting →</button>
 </div>
 
 <!-- NO inline scripts. All logic is in onboarding.js -->

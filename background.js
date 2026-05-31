@@ -568,7 +568,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message.action === 'set_ai_api_key') {
     loadState().then(async state => {
-      state.ai_api_key = message.apiKey || null;
+      state.ai_api_key = message.key || message.apiKey || null;
       await saveState(state);
       sendResponse({ ok: true });
     });
