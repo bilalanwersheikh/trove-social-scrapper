@@ -1,6 +1,6 @@
-# LinkedIn Saved Posts Extractor
+# LinkedIn Saved Posts Exporter
 
-A Chrome extension that automatically extracts your LinkedIn saved posts on a schedule and saves them as CSV files — no passwords stored, runs in your existing LinkedIn session.
+A Chrome extension that automatically exports your LinkedIn saved posts on a schedule and saves them as CSV files — no passwords stored, runs in your existing LinkedIn session.
 
 Built by [Bilal Anwersh](https://www.linkedin.com/in/bilalanwersh/) · Open-sourced as a proof-of-concept for [Trove](https://usetrove.app), where this workflow runs natively without any setup.
 
@@ -8,8 +8,8 @@ Built by [Bilal Anwersh](https://www.linkedin.com/in/bilalanwersh/) · Open-sour
 
 ## What it does
 
-- Silently extracts your LinkedIn saved posts in the background on a schedule you choose (every 12h or 24h)
-- Picks up from where the last run left off — never re-downloads posts you've already extracted
+- Silently exports your LinkedIn saved posts in the background on a schedule you choose (every 12h or 24h)
+- Picks up from where the last run left off — never re-downloads posts you've already exported
 - Saves a **session CSV** (this run only) and a **master CSV** (all runs combined) to your Downloads folder
 - **Optional**: uses your Anthropic or OpenAI API key to generate a concise AI title for each post before writing the CSV
 
@@ -44,7 +44,7 @@ Built by [Bilal Anwersh](https://www.linkedin.com/in/bilalanwersh/) · Open-sour
 | Step | What to do |
 |------|------------|
 | 1 | Make sure you're signed in to LinkedIn in Chrome |
-| 2 | Choose extraction schedule: every 12h or every 24h |
+| 2 | Choose export schedule: every 12h or every 24h |
 | 3 | Choose batch size: 10 / 25 / 50 / 100 posts per run |
 | 4 | Optionally name a sub-folder inside Downloads (e.g. `linkedin-csv`) |
 | 5 | Optionally paste an Anthropic or OpenAI API key to enable AI-generated titles |
@@ -59,8 +59,8 @@ Both files are saved to `Downloads/` (or `Downloads/<your-subfolder>/`):
 
 | File | Contents |
 |------|----------|
-| `YYMMDD_linkedin_saved_posts.csv` | Posts extracted in this run only |
-| `master_linkedin_saved_posts.csv` | All posts ever extracted (cumulative) |
+| `YYMMDD_linkedin_saved_posts.csv` | Posts exported in this run only |
+| `master_linkedin_saved_posts.csv` | All posts ever exported (cumulative) |
 
 **Columns:**
 
@@ -71,13 +71,13 @@ Both files are saved to `Downloads/` (or `Downloads/<your-subfolder>/`):
 | `Post Content` | Full post text (expanded via "see more") |
 | `Post Date` | Approximate date derived from LinkedIn's relative timestamp |
 | `Post URL` | Direct link to the post |
-| `Extracted At` | ISO timestamp of extraction |
+| `Extracted At` | ISO timestamp of when the post was exported |
 
 ---
 
 ## AI Titles (optional)
 
-After extraction, the extension can call an AI API to generate a short, descriptive title (up to 8 words) for each post.
+After each export, the extension can call an AI API to generate a short, descriptive title (up to 8 words) for each post.
 
 **Supported providers:**
 
@@ -100,12 +100,12 @@ You can add or change your API key at any time via the **⋯ menu** in the exten
 
 | Control | Action |
 |---------|--------|
-| **Extract now** | Run an immediate extraction |
-| **Stop** | Gracefully stop a running extraction (saves posts collected so far) |
+| **Export now** | Run an immediate export |
+| **Stop** | Gracefully stop a running export (saves posts collected so far) |
 | **AI Titles toggle** | Enable/disable AI title generation |
 | **Anthropic / OpenAI buttons** | Switch provider |
 | **⋯ menu → Add / Change API Key** | Open the API key dialog |
-| **⋯ menu → Restart Session** | Clear all extracted URLs and start fresh from the top of your saved posts |
+| **⋯ menu → Restart Session** | Clear all exported URLs and start fresh from the top of your saved posts |
 | **⋯ menu → Email Developer** | Opens `mailto:support@usetrove.app` |
 
 ---
@@ -119,16 +119,16 @@ Technically yes — LinkedIn's §8.2 prohibits automated data collection. In pra
 Yes, with a proper privacy policy explaining that no data is transmitted to your servers. The extension never contacts any server except LinkedIn (to load the page) and optionally Anthropic/OpenAI (for AI titles).
 
 **Where are the logs?**
-Open `chrome://extensions`, find **LinkedIn Saved Posts Extractor**, and click **Service worker** to open the DevTools console. All extraction events are logged there.
+Open `chrome://extensions`, find **LinkedIn Saved Posts Exporter**, and click **Service worker** to open the DevTools console. All export events are logged there.
 
-**What happens if Chrome closes mid-extraction?**
-The extension saves progress after every batch of 10 posts. On the next run it picks up from the last completed batch. At most 10 posts may need to be re-extracted.
+**What happens if Chrome closes mid-export?**
+The extension saves progress after every batch of 10 posts. On the next run it picks up from the last completed batch. At most 10 posts may need to be re-exported.
 
 **Can I change the output folder after setup?**
 Yes — open the extension popup and update the folder field there. Files will start saving to the new location on the next run.
 
 **How do I update to a new version?**
-Replace the files inside your existing `chrome-extension-prod/` folder with the new ones, then go to `chrome://extensions` and click the **↺ refresh icon** on the extension card. Do **not** remove the extension and reload from a new folder — that wipes your export history, anchor position, and deduplication state. Your downloaded CSV files in `Downloads/` are never affected either way.
+Replace the files inside your existing `chrome-extension-prod/` folder with the new ones, then go to `chrome://extensions` and click the **↺ refresh icon** on the extension card. Do **not** remove the extension and reload from a new folder — that wipes your export history, anchor position, and deduplication state. Your CSV files in `Downloads/` are never affected either way.
 
 > **Note for a future release:** A self-healing import is planned that will rebuild state from the master CSV on first run after a reinstall, making the distinction above irrelevant.
 
@@ -141,8 +141,8 @@ The extension lives inside the `chrome-extension-prod/` folder:
 ```
 chrome-extension-prod/
 ├── manifest.json        Chrome extension manifest (MV3)
-├── background.js        Service worker — extraction flow, AI title generation, alarms
-├── content.js           Injected into LinkedIn — DOM scraping, two-phase scroll
+├── background.js        Service worker — export flow, AI title generation, alarms
+├── content.js           Injected into LinkedIn — DOM scraping, scroll and export
 ├── popup.html/js        Extension popup UI
 ├── onboarding.html/js   First-install setup page
 ├── state.js             Chrome storage schema + helpers
