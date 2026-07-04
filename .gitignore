@@ -1,0 +1,10 @@
+.DS_Store
+.idea/
+output/
+scraper_chrome_profile/
+*.docx
+
+# Dev-only artifacts — never publish to the public remote
+projectplan/
+chrome-extension-dev/
+.claude/
